@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Manajemen Jadwal Akademik</title>
+  <meta name="description" content="Aplikasi manajemen jadwal akademik sederhana untuk menambah, melihat, dan menghapus jadwal perkuliahan">
+  <meta name="keywords" content="jadwal, akademik, perkuliahan, jadwal kuliah, manajemen jadwal">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="/">
+  <meta property="og:title" content="Sistem Manajemen Jadwal Akademik">
+  <meta property="og:description" content="Kelola jadwal perkuliahan dengan mudah menggunakan aplikasi sederhana ini.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="author" content="Sistem Manajemen Jadwal">
+  <meta name="theme-color" content="#2c3e50">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%233498db'/%3E%3Ctext x='50' y='60' font-size='50' text-anchor='middle' fill='white' font-family='Arial'%3EJ%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%233498db'/%3E%3Ctext x='50' y='60' font-size='50' text-anchor='middle' fill='white' font-family='Arial'%3EJ%3C/text%3E%3C/svg%3E">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Sistem Manajemen Jadwal Akademik",
+    "description": "Aplikasi sederhana untuk mengelola jadwal perkuliahan",
+    "applicationCategory": "Education"
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Lewati ke konten</a>
+
+<header class="app-header">
+  <div class="container">
+    <div class="brand">
+      <h1>Jadwal Akademik</h1>
+      <p>Kelola jadwal perkuliahan dengan mudah</p>
+    </div>
+    <div class="header-actions">
+      <button id="themeToggle" class="btn btn-ghost" aria-pressed="false" aria-label="Toggle tema" title="Toggle tema">🌗</button>
+      <button id="installBtn" class="btn btn-ghost" style="display:none" aria-hidden="true">Install</button>
+      <button class="nav-toggle" type="button" aria-controls="main-nav" aria-expanded="false" aria-label="Buka menu">☰</button>
+    </div>
+    <nav id="main-nav" class="main-nav" role="navigation" aria-label="Navigasi utama">
+      <ul class="nav-menu">
+        <li><a href="#add">Tambah Jadwal</a></li>
+        <li><a href="#list">Daftar Jadwal</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="app" role="main">
+
+  <section id="add" class="form-section" aria-labelledby="add-heading">
+    <h2 id="add-heading">Tambah Jadwal</h2>
+
+    <form id="scheduleForm">
+      <label for="mataKuliah">Nama Mata Kuliah</label>
+      <input type="text" id="mataKuliah" name="mataKuliah" placeholder="Nama Mata Kuliah" required>
+
+      <label for="hari">Hari</label>
+      <select id="hari" name="hari" required>
+        <option value="">Pilih Hari</option>
+        <option>Senin</option>
+        <option>Selasa</option>
+        <option>Rabu</option>
+        <option>Kamis</option>
+        <option>Jumat</option>
+        <option>Sabtu</option>
+      </select>
+
+      <label for="jam">Jam</label>
+      <input type="text" id="jam" name="jam" placeholder="Jam (contoh: 08:00 - 10:00)" required>
+
+      <label for="ruang">Ruang</label>
+      <input type="text" id="ruang" name="ruang" placeholder="Ruang" required>
+
+      <button id="addSchedule">Simpan Jadwal</button>
+    </form>
+
+    <p id="message" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="list" class="table-section" aria-labelledby="list-heading">
+    <h2 id="list-heading">Daftar Jadwal</h2>
+    <div class="table-controls">
+      <div class="controls">
+        <label for="searchInput" class="sr-only">Cari jadwal</label>
+        <input id="searchInput" type="search" placeholder="Cari mata kuliah, ruang, atau jam..." aria-label="Cari jadwal">
+
+        <label for="filterDay" class="sr-only">Filter hari</label>
+        <select id="filterDay" aria-label="Filter berdasarkan hari">
+          <option value="">Semua hari</option>
+          <option>Senin</option>
+          <option>Selasa</option>
+          <option>Rabu</option>
+          <option>Kamis</option>
+          <option>Jumat</option>
+          <option>Sabtu</option>
+        </select>
+
+        <label for="filterRoom" class="sr-only">Filter ruang</label>
+        <input id="filterRoom" type="text" placeholder="Filter ruang (contoh: R101)" aria-label="Filter ruang">
+
+        <button id="exportCsv" type="button" class="btn btn-small btn-ghost">Export CSV</button>
+        <button id="downloadSample" type="button" class="btn btn-small btn-ghost">Download Sample CSV</button>
+        <button id="importBtn" type="button" class="btn btn-small btn-ghost">Import CSV</button>
+        <input id="importInput" type="file" accept=".csv" style="display:none">
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <caption>Jadwal Perkuliahan</caption>
+        <thead>
+          <tr>
+            <th scope="col">Mata Kuliah</th>
+            <th scope="col">Hari</th>
+            <th scope="col">Jam</th>
+            <th scope="col">Ruang</th>
+            <th scope="col">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleTable"></tbody>
+      </table>
+    </div>
+
+  </section>
+
+</main>
+
+<script src="script.js" defer></script>
+</body>
+</html>
