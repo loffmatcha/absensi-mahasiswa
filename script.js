@@ -1,127 +1,36 @@
-const mataKuliahInput = document.getElementById("mataKuliah");
-const hariInput = document.getElementById("hari");
-const jamInput = document.getElementById("jam");
-const ruangInput = document.getElementById("ruang");
-const addBtn = document.getElementById("addSchedule");
-const tableBody = document.getElementById("scheduleTable");
-const message = document.getElementById("message");
-const scheduleForm = document.getElementById("scheduleForm");
-const navToggle = document.querySelector('.nav-toggle');
-const themeToggle = document.getElementById('themeToggle');
-const installBtn = document.getElementById('installBtn');
-const searchInput = document.getElementById('searchInput');
-const filterDay = document.getElementById('filterDay');
-const filterRoom = document.getElementById('filterRoom');
-const exportBtn = document.getElementById('exportCsv');
-const importBtn = document.getElementById('importBtn');
-const importInput = document.getElementById('importInput');
-const downloadSample = document.getElementById('downloadSample');
+// ==============================
+// GLOBAL VARIABLES & FUNCTIONS
+// ==============================
 
 let schedules = JSON.parse(localStorage.getItem("schedules")) || [];
 
 function showMessage(text, type = 'info') {
+  const message = document.getElementById("message");
+  if (!message) return;
   message.textContent = text;
-  message.style.color = type === 'error' ? 'red' : 'green';
+  message.style.color = type === 'error' ? 'var(--danger)' : 'green';
+  setTimeout(() => { message.textContent = ''; }, 3000);
 }
 
-// Render jadwal ke tabel
-function renderSchedules() {
-  tableBody.innerHTML = "";
-
-  schedules.forEach(schedule => {
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>${escapeHtml(schedule.mataKuliah)}</td>
-      <td>${escapeHtml(schedule.hari)}</td>
-      <td>${escapeHtml(schedule.jam)}</td>
-      <td>${escapeHtml(schedule.ruang)}</td>
-      <td>
-        <button class="action-btn" data-id="${schedule.id}">Hapus</button>
-      </td>
-    `;
-
-    tableBody.appendChild(row);
-  });
-}
-
-// Escape teks sederhana untuk mencegah XSS saat menampilkan
 function escapeHtml(text) {
-  return String(text).replace(/[&<>\"]/g, function (s) {
+  return String(text).replace(/[&<>"]/g, function (s) {
     return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]);
   });
 }
 
-// Tambah jadwal melalui submit form
-scheduleForm.addEventListener('submit', (e) => {
-  e.preventDefault();
+// ==============================
+// THEME MANAGEMENT
+// ==============================
 
-  const mataKuliah = mataKuliahInput.value.trim();
-  const hari = hariInput.value;
-  const jam = jamInput.value.trim();
-  const ruang = ruangInput.value.trim();
-
-  if (!mataKuliah || !hari || !jam || !ruang) {
-    showMessage('Semua field wajib diisi!', 'error');
-    return;
-  }
-
-  const newSchedule = {
-    id: Date.now(),
-    mataKuliah,
-    hari,
-    jam,
-    ruang
-  };
-
-  schedules.push(newSchedule);
-  localStorage.setItem("schedules", JSON.stringify(schedules));
-
-  scheduleForm.reset();
-  showMessage('Jadwal berhasil ditambahkan!', 'success');
-  renderSchedules();
-  document.getElementById('list').scrollIntoView({ behavior: 'smooth' });
-});
-
-// Event delegation untuk tombol hapus
-tableBody.addEventListener('click', (e) => {
-  if (e.target && e.target.matches('.action-btn')) {
-    const id = Number(e.target.getAttribute('data-id'));
-    if (confirm('Yakin ingin menghapus jadwal ini?')) {
-      deleteSchedule(id);
-      showMessage('Jadwal dihapus', 'success');
-    }
-  }
-});
-
-// Hapus jadwal
-function deleteSchedule(id) {
-  schedules = schedules.filter(item => item.id !== id);
-  localStorage.setItem("schedules", JSON.stringify(schedules));
-  renderSchedules();
-}
-
-// Toggle mobile nav
-if (navToggle) {
-  navToggle.addEventListener('click', () => {
-    const expanded = navToggle.getAttribute('aria-expanded') === 'true';
-    navToggle.setAttribute('aria-expanded', String(!expanded));
-    document.body.classList.toggle('nav-open');
-  });
-}
-
-// Render awal
-// Render awal
-renderSchedules();
-
-/* --- THEME (dark/light) --- */
 function applyTheme(theme){
   if(theme === 'dark') {
     document.documentElement.setAttribute('data-theme','dark');
-    themeToggle.setAttribute('aria-pressed','true');
+    const toggle = document.getElementById('themeToggle');
+    if(toggle) toggle.setAttribute('aria-pressed','true');
   } else {
     document.documentElement.removeAttribute('data-theme');
-    themeToggle.setAttribute('aria-pressed','false');
+    const toggle = document.getElementById('themeToggle');
+    if(toggle) toggle.setAttribute('aria-pressed','false');
   }
 }
 
@@ -134,6 +43,7 @@ function initTheme(){
   } catch(e){}
 }
 
+const themeToggle = document.getElementById('themeToggle');
 if(themeToggle){
   themeToggle.addEventListener('click', ()=>{
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -143,86 +53,281 @@ if(themeToggle){
   });
 }
 
-initTheme();
+// ==============================
+// MOBILE NAVIGATION
+// ==============================
 
-/* --- PWA: install prompt & service worker registration --- */
+const navToggle = document.querySelector('.nav-toggle');
+if (navToggle) {
+  navToggle.addEventListener('click', () => {
+    const expanded = navToggle.getAttribute('aria-expanded') === 'true';
+    navToggle.setAttribute('aria-expanded', String(!expanded));
+    document.body.classList.toggle('nav-open');
+  });
+}
+
+// ==============================
+// PWA: INSTALL & SERVICE WORKER
+// ==============================
+
+const installBtn = document.getElementById('installBtn');
 let deferredPrompt = null;
+
 window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('⚡ beforeinstallprompt event fired');
   e.preventDefault();
   deferredPrompt = e;
-  if(installBtn){ installBtn.style.display = 'inline-flex'; installBtn.setAttribute('aria-hidden','false'); }
+  if(installBtn){ 
+    installBtn.style.display = 'inline-flex'; 
+    installBtn.setAttribute('aria-hidden','false');
+    console.log('✅ Install button shown');
+  }
 });
 
 if(installBtn){
   installBtn.addEventListener('click', async () => {
-    if(!deferredPrompt) return;
+    console.log('👆 Install button clicked');
+    if(!deferredPrompt) {
+      console.warn('⚠️ deferredPrompt not available');
+      return;
+    }
     deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
+    console.log('User choice:', choice.outcome);
+    if(choice.outcome === 'accepted') {
+      console.log('✅ User accepted install');
+    } else {
+      console.log('❌ User dismissed install');
+    }
     deferredPrompt = null;
     installBtn.style.display = 'none';
   });
 }
 
+// Service Worker Registration with better error handling
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('/service-worker.js').catch(()=>{/* ignore */});
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('✅ Service Worker registered:', registration.scope);
+        
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          console.log('🔄 Service Worker update found');
+        });
+      })
+      .catch(error => {
+        console.error('❌ Service Worker registration failed:', error);
+      });
+    
+    // Listen for controller change (new SW activated)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('🔄 New Service Worker activated, reloading...');
+      window.location.reload();
+    });
   });
 }
 
-/* --- Filtering & Search --- */
-function matchesFilter(item){
-  const q = (searchInput && searchInput.value || '').trim().toLowerCase();
-  const day = (filterDay && filterDay.value) || '';
-  const room = (filterRoom && filterRoom.value || '').trim().toLowerCase();
-
-  if(day && item.hari !== day) return false;
-  if(room && !item.ruang.toLowerCase().includes(room)) return false;
-  if(q){
-    const hay = (item.mataKuliah + ' ' + item.jam + ' ' + item.ruang + ' ' + item.hari).toLowerCase();
-    return hay.includes(q);
-  }
-  return true;
-}
-
-// enhance renderSchedules to respect search/filter
-function renderSchedules(){
-  tableBody.innerHTML = "";
-
-  schedules.filter(matchesFilter).forEach(schedule => {
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>${escapeHtml(schedule.mataKuliah)}</td>
-      <td>${escapeHtml(schedule.hari)}</td>
-      <td>${escapeHtml(schedule.jam)}</td>
-      <td>${escapeHtml(schedule.ruang)}</td>
-      <td>
-        <button class="action-btn" data-id="${schedule.id}">Hapus</button>
-      </td>
-    `;
-
-    tableBody.appendChild(row);
-  });
-}
-
-// live update when search or filters change
-if(searchInput) searchInput.addEventListener('input', ()=> renderSchedules());
-if(filterDay) filterDay.addEventListener('change', ()=> renderSchedules());
-if(filterRoom) filterRoom.addEventListener('input', ()=> renderSchedules());
-
-/* --- Microinteractions: keyboard shortcuts --- */
-window.addEventListener('keydown', (e) => {
-  if(e.key === '/' && document.activeElement !== searchInput){
-    e.preventDefault(); searchInput && searchInput.focus();
-  }
-  if(e.key === 'n' && document.activeElement.tagName.toLowerCase() !== 'input'){
-    // focus first input of add form
-    mataKuliahInput && mataKuliahInput.focus();
+// Debug: Check PWA installability
+window.addEventListener('load', () => {
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('✅ App is running as PWA');
+  } else {
+    console.log('ℹ️ App is running in browser');
   }
 });
 
+// ==============================
+// INDEX.HTML - ADD SCHEDULE PAGE
+// ==============================
 
-// CSV helpers
+const scheduleForm = document.getElementById("scheduleForm");
+const scheduleCount = document.getElementById("scheduleCount");
+
+if (scheduleForm) {
+  // Update counter
+  function updateCounter() {
+    if (!scheduleCount) return;
+    schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+    scheduleCount.textContent = schedules.length;
+  }
+
+  // Submit form
+  scheduleForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const mataKuliah = document.getElementById("mataKuliah").value.trim();
+    const hari = document.getElementById("hari").value;
+    const jam = document.getElementById("jam").value.trim();
+    const ruang = document.getElementById("ruang").value.trim();
+
+    if (!mataKuliah || !hari || !jam || !ruang) {
+      showMessage('Semua field wajib diisi!', 'error');
+      return;
+    }
+
+    const newSchedule = {
+      id: Date.now(),
+      mataKuliah,
+      hari,
+      jam,
+      ruang
+    };
+
+    schedules.push(newSchedule);
+    localStorage.setItem("schedules", JSON.stringify(schedules));
+
+    scheduleForm.reset();
+    showMessage('✓ Jadwal berhasil ditambahkan!', 'success');
+    updateCounter();
+  });
+
+  // Keyboard shortcut
+  window.addEventListener('keydown', (e) => {
+    if(e.key === 'n' && document.activeElement.tagName.toLowerCase() !== 'input'){
+      const firstInput = document.getElementById('mataKuliah');
+      if(firstInput) firstInput.focus();
+    }
+  });
+
+  // Initial counter
+  updateCounter();
+}
+
+// ==============================
+// JADWAL.HTML - SCHEDULE LIST PAGE
+// ==============================
+
+const tableBody = document.getElementById("scheduleTable");
+const scheduleCards = document.getElementById("scheduleCards");
+const tableWrapper = document.getElementById("scheduleTableWrapper");
+const emptyState = document.getElementById("emptyState");
+const searchInput = document.getElementById('searchInput');
+const filterDay = document.getElementById('filterDay');
+const filterRoom = document.getElementById('filterRoom');
+
+if (tableBody && scheduleCards) {
+  
+  // Filter function
+  function matchesFilter(item){
+    const q = (searchInput && searchInput.value || '').trim().toLowerCase();
+    const day = (filterDay && filterDay.value) || '';
+    const room = (filterRoom && filterRoom.value || '').trim().toLowerCase();
+
+    if(day && item.hari !== day) return false;
+    if(room && !item.ruang.toLowerCase().includes(room)) return false;
+    if(q){
+      const hay = (item.mataKuliah + ' ' + item.jam + ' ' + item.ruang + ' ' + item.hari).toLowerCase();
+      return hay.includes(q);
+    }
+    return true;
+  }
+
+  // Render schedules (dual view: cards + table)
+  function renderSchedules() {
+    schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+    tableBody.innerHTML = "";
+    scheduleCards.innerHTML = "";
+
+    const filtered = schedules.filter(matchesFilter);
+
+    if (schedules.length === 0) {
+      if(tableWrapper) tableWrapper.style.display = 'none';
+      if(scheduleCards) scheduleCards.style.display = 'none';
+      if(emptyState) emptyState.style.display = 'block';
+      return;
+    }
+
+    if(tableWrapper) tableWrapper.style.display = 'block';
+    if(scheduleCards) scheduleCards.style.display = 'block';
+    if(emptyState) emptyState.style.display = 'none';
+
+    if (filtered.length === 0) {
+      scheduleCards.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:var(--muted)">Tidak ada jadwal yang cocok dengan filter</div>';
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Tidak ada jadwal yang cocok dengan filter</td></tr>';
+      return;
+    }
+
+    filtered.forEach(schedule => {
+      // Card view for mobile
+      const card = document.createElement("div");
+      card.className = "schedule-card card";
+      card.innerHTML = `
+        <div class="schedule-card-header">
+          <h3 class="schedule-title">${escapeHtml(schedule.mataKuliah)}</h3>
+          <button class="action-btn action-btn-small" data-id="${schedule.id}">Hapus</button>
+        </div>
+        <div class="schedule-card-body">
+          <div class="schedule-info">
+            <span class="schedule-label">📅 Hari:</span>
+            <span class="schedule-value">${escapeHtml(schedule.hari)}</span>
+          </div>
+          <div class="schedule-info">
+            <span class="schedule-label">🕐 Jam:</span>
+            <span class="schedule-value">${escapeHtml(schedule.jam)}</span>
+          </div>
+          <div class="schedule-info">
+            <span class="schedule-label">🏛️ Ruang:</span>
+            <span class="schedule-value">${escapeHtml(schedule.ruang)}</span>
+          </div>
+        </div>
+      `;
+      scheduleCards.appendChild(card);
+
+      // Table view for desktop
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><strong>${escapeHtml(schedule.mataKuliah)}</strong></td>
+        <td>${escapeHtml(schedule.hari)}</td>
+        <td>${escapeHtml(schedule.jam)}</td>
+        <td>${escapeHtml(schedule.ruang)}</td>
+        <td>
+          <button class="action-btn" data-id="${schedule.id}">Hapus</button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  // Event delegation for delete (both card and table)
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.matches('.action-btn')) {
+      const id = Number(e.target.getAttribute('data-id'));
+      if (confirm('Yakin ingin menghapus jadwal ini?')) {
+        schedules = schedules.filter(item => item.id !== id);
+        localStorage.setItem("schedules", JSON.stringify(schedules));
+        showMessage('Jadwal dihapus', 'success');
+        renderSchedules();
+      }
+    }
+  });
+
+  // Live filter
+  if(searchInput) searchInput.addEventListener('input', renderSchedules);
+  if(filterDay) filterDay.addEventListener('change', renderSchedules);
+  if(filterRoom) filterRoom.addEventListener('input', renderSchedules);
+
+  // Keyboard shortcut for search
+  window.addEventListener('keydown', (e) => {
+    if(e.key === '/' && document.activeElement !== searchInput){
+      e.preventDefault(); 
+      if(searchInput) searchInput.focus();
+    }
+  });
+
+  // Initial render
+  renderSchedules();
+}
+
+// ==============================
+// CSV EXPORT/IMPORT
+// ==============================
+
+const exportBtn = document.getElementById('exportCsv');
+const importBtn = document.getElementById('importBtn');
+const importInput = document.getElementById('importInput');
+const downloadSample = document.getElementById('downloadSample');
+
 function csvEscape(val) {
   if (val == null) return '';
   const s = String(val);
@@ -230,7 +335,11 @@ function csvEscape(val) {
 }
 
 function exportCSV() {
-  if (!schedules.length) { showMessage('Tidak ada data untuk diekspor', 'error'); return; }
+  schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+  if (!schedules.length) { 
+    showMessage('Tidak ada data untuk diekspor', 'error'); 
+    return; 
+  }
   const header = ['mataKuliah','hari','jam','ruang'];
   const rows = [header.join(',')];
   schedules.forEach(s => {
@@ -246,10 +355,11 @@ function exportCSV() {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  showMessage('CSV berhasil diunduh', 'success');
 }
 
 function downloadSampleCsv() {
-  const sample = 'mataKuliah,hari,jam,ruang\nPengantar Pemrograman,Senin,08:00 - 10:00,R101\n';
+  const sample = 'mataKuliah,hari,jam,ruang\nPengantar Pemrograman,Senin,08:00 - 10:00,R101\nBasis Data,Selasa,10:00 - 12:00,R102\n';
   const blob = new Blob([sample], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -259,6 +369,7 @@ function downloadSampleCsv() {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  showMessage('Sample CSV diunduh', 'success');
 }
 
 function parseCSV(text) {
@@ -291,10 +402,13 @@ function handleImportFile(file) {
     try {
       const text = e.target.result;
       const rows = parseCSV(text);
-      if (rows.length < 2) { showMessage('CSV kosong atau format tidak sesuai', 'error'); return; }
+      if (rows.length < 2) { 
+        showMessage('CSV kosong atau format tidak sesuai', 'error'); 
+        return; 
+      }
       const header = rows[0].map(h => h.trim().toLowerCase());
       const idx = {
-        mataKuliah: header.indexOf('matakuliah') !== -1 ? header.indexOf('matakuliah') : header.indexOf('mataKuliah'.toLowerCase()),
+        mataKuliah: header.findIndex(h => h === 'matakuliah' || h === 'mata kuliah'),
         hari: header.indexOf('hari'),
         jam: header.indexOf('jam'),
         ruang: header.indexOf('ruang')
@@ -304,9 +418,10 @@ function handleImportFile(file) {
         return;
       }
       let added = 0;
+      schedules = JSON.parse(localStorage.getItem("schedules")) || [];
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
-        if (!r || r.length <= Math.max(idx.mataKuliah, idx.hari, idx.jam, idx.ruang)) continue;
+        if (!r || r.length <= Math.max(...Object.values(idx))) continue;
         const newSchedule = {
           id: Date.now() + i,
           mataKuliah: r[idx.mataKuliah].trim(),
@@ -314,14 +429,17 @@ function handleImportFile(file) {
           jam: r[idx.jam].trim(),
           ruang: r[idx.ruang].trim()
         };
-        if (newSchedule.mataKuliah && newSchedule.hari) { schedules.push(newSchedule); added++; }
+        if (newSchedule.mataKuliah && newSchedule.hari) { 
+          schedules.push(newSchedule); 
+          added++; 
+        }
       }
       if (added) {
         localStorage.setItem('schedules', JSON.stringify(schedules));
-        renderSchedules();
-        showMessage('Berhasil mengimpor ' + added + ' jadwal', 'success');
+        if(typeof renderSchedules === 'function') renderSchedules();
+        showMessage('✓ Berhasil mengimpor ' + added + ' jadwal', 'success');
       } else {
-        showMessage('Tidak ada baris valid yang ditemukan dalam CSV', 'error');
+        showMessage('Tidak ada baris valid dalam CSV', 'error');
       }
     } catch (err) {
       showMessage('Gagal membaca CSV: ' + err.message, 'error');
@@ -338,3 +456,9 @@ if (importInput) importInput.addEventListener('change', (e) => {
   if (file) handleImportFile(file);
   importInput.value = '';
 });
+
+// ==============================
+// INITIALIZE
+// ==============================
+
+initTheme();
